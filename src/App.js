@@ -4,7 +4,9 @@ import "./App.css";
 import "leaflet/dist/leaflet.css";
 import { Icon } from "leaflet";
 import { foods, filterItems, filterItems2 } from "./utils/searchbar_utils";
-// import * as parkData from "./data/skateboard-parks.json";
+
+import { BrowserRouter, Route, Routes } from "react-router-dom";
+
 
 function App() {
   const [locationData, setlocationData] = useState(null);
@@ -17,6 +19,25 @@ function App() {
   }, []);
 
   return (
+    <BrowserRouter basename={process.env.PUBLIC_URL}>
+      <Routes>
+        <Route
+          exact
+          path="/"
+          element={
+            <MapPageLayout
+              locationData={locationData}
+              setlocationData={setlocationData}
+            ></MapPageLayout>
+          }
+        />
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
+function MapPageLayout({ locationData, setlocationData }) {
+  return (
     <div className="bg-gray-950 flex justify-center items-center min-h-screen p-10">
       <div className="canvas flex">
         <div id="map" className="leaflet-container w-3/4">
@@ -25,15 +46,6 @@ function App() {
         <div className="filterablelist w-1/4">
           <FilterableList items={locationData}></FilterableList>
         </div>
-        {/* <div className="canvas flex">Test</div> */}
-        {/* <div>
-          {locationData ? (
-            <pre>{JSON.stringify(locationData, null, 2)}</pre>
-          ) : (
-            "Loading..."
-          )}
-          //{" "}
-        </div> */}
       </div>
     </div>
   );
@@ -45,9 +57,7 @@ function BasicMap( { locations, center } ) {
       center={[51.505, -0.09]}
       zoom={13}
       scrollWheelZoom={true}
-      // style={{ height: "40vh", width: "60vh" }}
     >
-      {/* style={{ height: "100vh" }}  */}
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -71,35 +81,18 @@ function BasicMap( { locations, center } ) {
 
 function FilterableList( { items } ) {
   const [query, setQuery] = useState("");
-  // const results = filterItems(foods, query);
-  // const results = [
-  //   {
-  //     id: "a",
-  //     name: "b",
-  //     description: "c",
-  //   },
-  // ];
-  // items.map(item => item.opendata_id);
-  // const results = filterItems2(
-  //   // items.map((item) => item.geojson.properties.location),
-  //   items.map(item => item.opendata_id),
-  //   query
-  // );
+  
   console.log(items);
 
   var results = null;
   if (items) {
     results = filterItems2(
-      // items.map((item) => item.geojson.properties.location),
-      // items.map((item) => item.geojson),
       items,
       query
     );
   } else {
     return <div>Loading...</div>;
   }
-
-  // getData();
 
   function handleChange(e) {
     setQuery(e.target.value);
@@ -112,9 +105,6 @@ function FilterableList( { items } ) {
       </div>
       <hr />
       <LocationList items={results} />
-      {/* <div>
-        {results ? <pre>{JSON.stringify(results, null, 2)}</pre> : "Loading..."}
-      </div> */}
     </>
   );
 }
