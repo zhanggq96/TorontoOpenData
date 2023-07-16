@@ -1,15 +1,15 @@
 {
   "files": {
-    "main.css": "/zhanggq96/TorontoOpenData/static/css/main.2fed11be.css",
-    "main.js": "/zhanggq96/TorontoOpenData/static/js/main.9de9a79b.js",
-    "static/js/787.7aed3815.chunk.js": "/zhanggq96/TorontoOpenData/static/js/787.7aed3815.chunk.js",
-    "index.html": "/zhanggq96/TorontoOpenData/index.html",
-    "main.2fed11be.css.map": "/zhanggq96/TorontoOpenData/static/css/main.2fed11be.css.map",
-    "main.9de9a79b.js.map": "/zhanggq96/TorontoOpenData/static/js/main.9de9a79b.js.map",
-    "787.7aed3815.chunk.js.map": "/zhanggq96/TorontoOpenData/static/js/787.7aed3815.chunk.js.map"
+    "main.css": "/TorontoOpenData/static/css/main.2fed11be.css",
+    "main.js": "/TorontoOpenData/static/js/main.0b797ad5.js",
+    "static/js/787.7aed3815.chunk.js": "/TorontoOpenData/static/js/787.7aed3815.chunk.js",
+    "index.html": "/TorontoOpenData/index.html",
+    "main.2fed11be.css.map": "/TorontoOpenData/static/css/main.2fed11be.css.map",
+    "main.0b797ad5.js.map": "/TorontoOpenData/static/js/main.0b797ad5.js.map",
+    "787.7aed3815.chunk.js.map": "/TorontoOpenData/static/js/787.7aed3815.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.2fed11be.css",
-    "static/js/main.9de9a79b.js"
+    "static/js/main.0b797ad5.js"
   ]
 }
