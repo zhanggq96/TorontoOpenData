@@ -3,7 +3,7 @@ import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import "./App.css";
 import "leaflet/dist/leaflet.css";
 import { Icon } from "leaflet";
-import { foods, filterItems, filterItems2 } from "./utils/searchbar_utils";
+import { filterItems } from "./utils/searchbar_utils";
 
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 
@@ -11,11 +11,24 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 function App() {
   const [locationData, setlocationData] = useState(null);
 
+  const baseUrl = "http://35.183.91.143/";
+  const endpoint = "/api/washroomdata/"; 
+  // The trailing slash in the endpoint is absolutely critical
+  // though I don't know why. If not present, the first slash will get
+  // autocorrected to %2F.
+
+  const url = new URL(endpoint, baseUrl).href;
+  const request = new Request(url, {
+    method: "GET", // specify the desired HTTP method
+    // Add any additional headers or options if needed
+  });
   useEffect(() => {
-    fetch("http://35.183.91.143/api/washroomdata")
+    fetch(url)
       .then((response) => response.json())
       .then((json) => setlocationData(json))
-      .catch((error) => console.error(error));
+      .catch((error) => {
+        console.error(error);
+      });
   }, []);
 
   return (
@@ -54,7 +67,7 @@ function MapPageLayout({ locationData, setlocationData }) {
 function BasicMap( { locations, center } ) {
   return (
     <MapContainer
-      center={[51.505, -0.09]}
+      center={[43.6226 + 0.05, -79.45 + 0.05]}
       zoom={13}
       scrollWheelZoom={true}
     >
@@ -86,8 +99,8 @@ function FilterableList( { items } ) {
 
   var results = null;
   if (items) {
-    results = filterItems2(
-      items,
+    results = filterItems(
+      items.data,
       query
     );
   } else {
@@ -123,12 +136,12 @@ function LocationList({ items }) {
     <table>
       <tbody>
         {spliced_items.map((item) => (
-          <tr key={item.opendata_id}>
-            <td>{item.date_updated}</td>
-            <td>{item.geojson.location}</td>
+          <tr key={item.attributes.opendata_id}>
+            <td>{item.attributes.date_updated}</td>
+            <td>{item.attributes.geojson.location}</td>
             {/* <td>{item.geojson.geometry}</td> */}
-            <td>{item.geojson.geometry.coordinates[0]}</td>
-            <td>{item.geojson.geometry.coordinates[1]}</td>
+            <td>{item.attributes.geojson.geometry.coordinates[0].toFixed(2)}</td>
+            <td>{item.attributes.geojson.geometry.coordinates[1].toFixed(2)}</td>
           </tr>
         ))}
       </tbody>
