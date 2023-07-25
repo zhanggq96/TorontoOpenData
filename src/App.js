@@ -1,20 +1,23 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, createContext, useContext } from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
-import { filterItems } from "./utils/searchbar_utils";
-import { SearchBar } from "./utils/searchbar_utils";
-// import { Icon } from "leaflet";
+import { filterItems, SearchBar } from "./utils/js/searchbar_utils";
+import { iconMarker } from "./utils/js/basicmap_utils";
 
-import "./App.css";
 import "leaflet/dist/leaflet.css";
+import "./App.css";
+import "./utils/css/basicmap_customization.css";
 
+// --- Map state data ---
+const MapInfoContext = createContext();
 
 
 function App() {
+  // --- API state ---
   const [locationData, setlocationData] = useState(null);
 
   const baseUrl = "http://35.183.91.143/";
-  const endpoint = "/api/washroomdata/"; 
+  const endpoint = "/api/washroomdata/";
   // The trailing slash in the endpoint is absolutely critical
   // though I don't know why. If not present, the first slash will get
   // autocorrected to %2F.
@@ -32,6 +35,8 @@ function App() {
         console.error(error);
       });
   }, []);
+
+  // --- End API state ---
 
   return (
     <BrowserRouter basename={process.env.PUBLIC_URL}>
@@ -52,27 +57,56 @@ function App() {
 }
 
 function MapPageLayout({ locationData, setlocationData }) {
+  // --- Map Marker state ---
+  // Attributes: opendata_id, location, name
+  const mapMarkerData = {
+    display_markers: {},
+    addMarkerToMapFunction: null,
+  };
+  const [mapContextState, setmapContextState] = useState(mapMarkerData);
+
+  // addMarkerToMap function
+  mapMarkerData.addMarkerToMapFunction = function (item) {
+    // Show marker on map corresponding to location clicked
+    // mapContextData.display_list[e.opendata_id] = e;
+    const newMarker = {
+      opendata_id: item.attributes.opendata_id,
+      coordinates: item.attributes.geojson.geometry.coordinates,
+      name: item.attributes.geojson.location,
+    };
+    mapContextState.display_markers[item.attributes.opendata_id] = newMarker;
+    setmapContextState(mapContextState);
+    console.log(mapContextState);
+  };
+
+  
+
   return (
-    <div className="bg-gray-950 flex justify-center items-center min-h-screen p-10">
-      <div className="canvas flex">
-        <div id="map" className="leaflet-container w-3/4 h-full">
-          <BasicMap></BasicMap>
-        </div>
+    <MapInfoContext.Provider value={mapMarkerData}>
+      <div className="bg-gray-950 flex justify-center items-center min-h-screen p-10">
+        <div className="canvas flex">
+          <div id="map" className="leaflet-container w-3/4 h-full">
+            <BasicMap></BasicMap>
+          </div>
 
-        <div className="inline-block h-full mx-4 w-0.5 self-stretch bg-neutral-100 opacity-100 dark:opacity-50"></div>
+          {/* Vertical Line */}
+          <div className="inline-block h-full mx-4 w-0.5 self-stretch bg-neutral-100 opacity-100 dark:opacity-100"></div>
 
-        <div className="filterablelist w-1/4 h-full">
-          <FilterableList
-            className="h-full"
-            items={locationData}
-          ></FilterableList>
+          <div className="filterablelist w-1/4 h-full">
+            <FilterableList
+              className="h-full"
+              items={locationData}
+            ></FilterableList>
+          </div>
         </div>
       </div>
-    </div>
+    </MapInfoContext.Provider>
   );
 }
 
-function BasicMap( { locations, center } ) {
+function BasicMap( { locations, center, locationOnClick } ) {
+  // const mapInfo = useContext(MapInfoContext);
+
   return (
     <MapContainer
       center={[43.6226 + 0.05, -79.45 + 0.05]}
@@ -83,15 +117,14 @@ function BasicMap( { locations, center } ) {
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
-      {/* locations.map((location) => 
-      <Marker position={location}>
-        <Popup>
-          a.
-        </Popup>
-      </Marker>
-      ) 
-       */}
-      <Marker position={[43.6226 + 0.05, -79.45 + 0.05]}>
+
+      <BasicMapMarkers></BasicMapMarkers>
+
+      <Marker
+        className="leaflet-div-icon"
+        position={[43.6226 + 0.05, -79.45 + 0.05]}
+        icon={iconMarker}
+      >
         <Popup>
           A pretty CSS3 popup. <br /> Easily customizable.
         </Popup>
@@ -100,19 +133,40 @@ function BasicMap( { locations, center } ) {
   );
 }
 
-function FilterableList( { items } ) {
+function BasicMapMarkers( {} ) {
+  // To extract map markers from global context:
+  const mapInfo = useContext(MapInfoContext);
+  const map_markers = mapInfo.display_markers;
+  console.log("BasicMapMarkers");
+  console.log(map_markers);
+
+  // Have to introduce state here to get it to update
+  // const [mapContextState, setmapContextState] = useState(mapMarkerData);
+
+  return (
+    <>
+      {Object.entries(map_markers).map(([opendata_id, marker]) => (
+        <Marker
+          className="leaflet-div-icon"
+          position={marker.coordinates}
+          icon={iconMarker}
+        >
+          <Popup>{marker.name}</Popup>
+        </Marker>
+      ))}
+    </>
+  );
+}
+
+function FilterableList({ items }) {
+  // console.log(items);
   const [query, setQuery] = useState("");
-  
-  console.log(items);
 
   var results = null;
   if (items) {
-    results = filterItems(
-      items.data,
-      query
-    );
+    results = filterItems(items.data, query);
   } else {
-    return <div>Loading...</div>;
+    return <div className="font-mono">Loading...</div>;
   }
 
   function handleChange(e) {
@@ -120,22 +174,6 @@ function FilterableList( { items } ) {
   }
 
   return (
-    // This nested div is to make the overflow + top align work properly.
-    // Without the nested div, either (1) overflow but not top align, or
-    // (2) top align but not overflow.
-    // See: https://chat.openai.com/c/e52a3b12-f47d-443e-aef6-5f1b3b76783a
-    // <div className="pl-4 container mx-auto h-full rounded-lg grid place-items-start overflow-y-auto flex ">
-    //   <div className="flex-1 grid place-items-center overflow-y-auto w-full">
-    //     <div className="w-full">
-    //       <SearchBar className="w-full" query={query} onChange={handleChange} />
-    //     </div>
-    //     {/* <hr /> */}
-    //     <div className="w-full">
-    //       <LocationList items={results} />
-    //     </div>
-    //   </div>
-    // </div>
-
     // Removed overflow-y-auto from this one so it has no scrollwheel
     // Added h-full so it takes space of parent container
 
@@ -148,33 +186,26 @@ function FilterableList( { items } ) {
     // inner uses flex-grow to fill remaining space
     <div className="flex flex-col h-full w-full">
       <SearchBar className="w-full" query={query} onChange={handleChange} />
+      {/* Horizontal Line */}
+      <hr className="my-4 h-1  border-t-0 bg-neutral-100 opacity-100 dark:opacity-50" />
       <div className="mx-0 rounded-lg place-items-start overflow-y-auto flex-grow">
-        {/* <div className="place-items-center overflow-y-auto w-full h-full">
-          <LocationList items={results} />
-        </div> */}
         <LocationList items={results} />
       </div>
     </div>
   );
 }
 
-// function SearchBar({ query, onChange }) {
-//   return (
-//     <label className="w-full">
-//       Search: <input value={query} onChange={onChange} />
-//     </label>
-//   );
-// }
-
 // Template: https://transmit.tailwindui.com/
 function LocationList({ items }) {
+  const mapMarkerData = useContext(MapInfoContext);
+
   const spliced_items = items.slice(0, 10);
   return (
-    <div className="py-1 basicmap-font">
+    <div className="basicmap-font">
       {spliced_items.map((item) => (
         <div
           key={item.attributes.opendata_id}
-          className="mb-4 flex flex-col items-start basicmap-item-box"
+          className="mb-4 mr-1.5 flex flex-col items-start basicmap-item-box"
         >
           <h2 id="episode-5-title" className="text-lg font-bold text-slate-900">
             <a href="/5">{item.attributes.geojson.location}</a>
@@ -209,9 +240,31 @@ function LocationList({ items }) {
                 <path d="M8.25 4.567a.5.5 0 0 1 0 .866l-7.5 4.33A.5.5 0 0 1 0 9.33V.67A.5.5 0 0 1 .75.237l7.5 4.33Z"></path>
               </svg>
               <span className="ml-3" aria-hidden="true">
-                Additional Information
+                More Information
               </span>
             </button>
+            <span
+              aria-hidden="true"
+              className="text-sm font-bold text-slate-400"
+            >
+              /
+            </span>
+            <button
+              type="button"
+              className="flex items-center text-sm font-bold leading-6 text-pink-500 hover:text-pink-700 active:text-pink-900"
+              aria-label={item.attributes.geojson.type}
+            >
+              <span
+                className=""
+                aria-hidden="true"
+                onClick={function () {
+                  mapMarkerData.addMarkerToMapFunction(item);
+                }}
+              >
+                Show on Map
+              </span>
+            </button>
+
             <span
               aria-hidden="true"
               className="text-sm font-bold text-slate-400"
@@ -222,15 +275,5 @@ function LocationList({ items }) {
     </div>
   );
 }
-
-// const LocationlistFrame = ({ children }) => {
-//   return (
-//     <div className="w-full h-full items-center justify-center">
-//       <div className="w-full h-full overflow-y-auto">
-//         {children}
-//       </div>
-//     </div>
-//   );
-// };
 
 export default App;
