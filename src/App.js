@@ -1,15 +1,23 @@
 import React, { useState, useEffect, createContext, useContext } from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import { filterItems, SearchBar } from "./utils/js/searchbar_utils";
-import { iconMarker } from "./utils/js/basicmap_utils";
+import {
+  iconMarker,
+  mapInitZoom,
+  mapInitCenter,
+  latLng,
+} from "./utils/js/leaflet_utils";
 
 import "leaflet/dist/leaflet.css";
 import "./App.css";
 import "./utils/css/basicmap_customization.css";
 
 // --- Map state data ---
-const MapInfoContext = createContext();
+const MapMarkerContext = createContext();
+const UpdateMapMarkerContextFunction = createContext();
+const MapCenterContext = createContext();
+const UpdateMapCenterContextFunction = createContext();
 
 
 function App() {
@@ -23,10 +31,10 @@ function App() {
   // autocorrected to %2F.
 
   const url = new URL(endpoint, baseUrl).href;
-  const request = new Request(url, {
-    method: "GET", // specify the desired HTTP method
-    // Add any additional headers or options if needed
-  });
+  // const request = new Request(url, {
+  //   method: "GET", // specify the desired HTTP method
+  //   // Add any additional headers or options if needed
+  // });
   useEffect(() => {
     fetch(url)
       .then((response) => response.json())
@@ -34,9 +42,11 @@ function App() {
       .catch((error) => {
         console.error(error);
       });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // --- End API state ---
+  // console.log(window.matchMedia("(prefers-color-scheme: light)").matches);
 
   return (
     <BrowserRouter basename={process.env.PUBLIC_URL}>
@@ -56,61 +66,102 @@ function App() {
   );
 }
 
-function MapPageLayout({ locationData, setlocationData }) {
+function CenterToMarkerLocationComponent({ coord }) {
+  const map = useMap();
+  const targetLatLng = latLng(coord[0], coord[1]);
+
+  useEffect(() => {
+    // Fly to the specified location with the given zoom level
+    console.log("CenterToMarkerLocationComponent useEffect(): " + coord);
+    map.flyTo(coord, mapInitZoom);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [coord, map]);
+
+  return null;
+}
+
+function MapPageLayout({ locationData }) {
   // --- Map Marker state ---
   // Attributes: opendata_id, location, name
-  const mapMarkerData = {
+  const [mapMarkerContextState, setmapMarkerContextState] = useState({
     display_markers: {},
-    addMarkerToMapFunction: null,
-  };
-  const [mapContextState, setmapContextState] = useState(mapMarkerData);
+  });
 
-  // addMarkerToMap function
-  mapMarkerData.addMarkerToMapFunction = function (item) {
-    // Show marker on map corresponding to location clicked
-    // mapContextData.display_list[e.opendata_id] = e;
+  function addMarkerToMapFunction(item) {
     const newMarker = {
       opendata_id: item.attributes.opendata_id,
       coordinates: item.attributes.geojson.geometry.coordinates,
       name: item.attributes.geojson.location,
     };
-    mapContextState.display_markers[item.attributes.opendata_id] = newMarker;
-    setmapContextState(mapContextState);
-    console.log(mapContextState);
-  };
 
-  
+    // Create a new object with the updated display_markers
+    const updatedMapMarkerContextState = {
+      display_markers: {
+        ...mapMarkerContextState.display_markers,
+        [item.attributes.opendata_id]: newMarker,
+      },
+    };
+
+    // Update the state with the new object
+    setmapMarkerContextState(updatedMapMarkerContextState);
+    // console.log(updatedContextState);
+  }
+
+  const [mapCenterContextState, setMapCenterContextState] = useState({
+    center: mapInitCenter,
+  });
+
+  function centerToMarkerLocation(item) {
+    setMapCenterContextState({
+      center: item.attributes.geojson.geometry.coordinates,
+    });
+    console.log("centerToMarkerLocation: " + item.attributes.geojson.geometry.coordinates);
+  }
 
   return (
-    <MapInfoContext.Provider value={mapMarkerData}>
-      <div className="bg-gray-950 flex justify-center items-center min-h-screen p-10">
-        <div className="canvas flex">
-          <div id="map" className="leaflet-container w-3/4 h-full">
-            <BasicMap></BasicMap>
-          </div>
+    // MapCenterContext
+    <div className="bg-gray-950 flex justify-center items-center min-h-screen p-10">
+      <div className="canvas flex">
+        <div id="map" className="leaflet-container w-3/4 h-full">
+          <MapCenterContext.Provider value={mapCenterContextState}>
+            <MapMarkerContext.Provider value={mapMarkerContextState}>
+              <BasicMap></BasicMap>
+            </MapMarkerContext.Provider>
+          </MapCenterContext.Provider>
+        </div>
 
-          {/* Vertical Line */}
-          <div className="inline-block h-full mx-4 w-0.5 self-stretch bg-neutral-100 opacity-100 dark:opacity-100"></div>
+        {/* Vertical Line */}
+        <div className="inline-block h-full mx-4 w-0.5 self-stretch bg-neutral-100 opacity-100 divider"></div>
 
-          <div className="filterablelist w-1/4 h-full">
-            <FilterableList
-              className="h-full"
-              items={locationData}
-            ></FilterableList>
-          </div>
+        <div className="w-1/4 h-full">
+          <UpdateMapCenterContextFunction.Provider
+            value={centerToMarkerLocation}
+          >
+            <UpdateMapMarkerContextFunction.Provider
+              value={addMarkerToMapFunction}
+            >
+              <FilterableList
+                className="h-full"
+                items={locationData}
+              ></FilterableList>
+            </UpdateMapMarkerContextFunction.Provider>
+          </UpdateMapCenterContextFunction.Provider>
         </div>
       </div>
-    </MapInfoContext.Provider>
+    </div>
   );
 }
 
-function BasicMap( { locations, center, locationOnClick } ) {
-  // const mapInfo = useContext(MapInfoContext);
+function BasicMap( {} ) {
+  const mapCenterContext = useContext(MapCenterContext);
+  const current_center = mapCenterContext.center;
+  // console.log("BasicMap mapCenterContext: " + mapCenterContext);
+  // console.log("BasicMap mapCenterContext.center: " + current_center);
 
   return (
     <MapContainer
-      center={[43.6226 + 0.05, -79.45 + 0.05]}
-      zoom={13}
+      center={mapInitCenter} // Use something fixed for this, else map grey every time update this file
+      zoom={mapInitZoom}
       scrollWheelZoom={true}
     >
       <TileLayer
@@ -119,40 +170,39 @@ function BasicMap( { locations, center, locationOnClick } ) {
       />
 
       <BasicMapMarkers></BasicMapMarkers>
-
-      <Marker
-        className="leaflet-div-icon"
-        position={[43.6226 + 0.05, -79.45 + 0.05]}
-        icon={iconMarker}
-      >
-        <Popup>
-          A pretty CSS3 popup. <br /> Easily customizable.
-        </Popup>
-      </Marker>
+      {current_center ? (
+        // Render the map markers and centering component when current_center is defined
+        <>
+          <BasicMapMarkers />
+          <CenterToMarkerLocationComponent coord={current_center} />
+        </>
+      ) : (
+        // Render a loading text or any other placeholder when current_center is undefined
+        <div>Loading...</div>
+      )}
     </MapContainer>
   );
 }
 
 function BasicMapMarkers( {} ) {
   // To extract map markers from global context:
-  const mapInfo = useContext(MapInfoContext);
+  const mapInfo = useContext(MapMarkerContext);
   const map_markers = mapInfo.display_markers;
-  console.log("BasicMapMarkers");
-  console.log(map_markers);
-
-  // Have to introduce state here to get it to update
-  // const [mapContextState, setmapContextState] = useState(mapMarkerData);
+  // console.log("BasicMapMarkers");
+  // console.log(map_markers);
 
   return (
     <>
       {Object.entries(map_markers).map(([opendata_id, marker]) => (
-        <Marker
-          className="leaflet-div-icon"
-          position={marker.coordinates}
-          icon={iconMarker}
-        >
-          <Popup>{marker.name}</Popup>
-        </Marker>
+        <div key={opendata_id} className="leaflet-marker-container">
+          <Marker
+            className="leaflet-div-icon"
+            position={marker.coordinates}
+            icon={iconMarker}
+          >
+            <Popup>{marker.name}</Popup>
+          </Marker>
+        </div>
       ))}
     </>
   );
@@ -187,8 +237,8 @@ function FilterableList({ items }) {
     <div className="flex flex-col h-full w-full">
       <SearchBar className="w-full" query={query} onChange={handleChange} />
       {/* Horizontal Line */}
-      <hr className="my-4 h-1  border-t-0 bg-neutral-100 opacity-100 dark:opacity-50" />
-      <div className="mx-0 rounded-lg place-items-start overflow-y-auto flex-grow">
+      <hr className="my-4 border-t-0 bg-neutral-100 opacity-100 divider horizontal-divider"/>
+      <div className="mx-0 place-items-start overflow-y-auto flex-grow">
         <LocationList items={results} />
       </div>
     </div>
@@ -197,9 +247,14 @@ function FilterableList({ items }) {
 
 // Template: https://transmit.tailwindui.com/
 function LocationList({ items }) {
-  const mapMarkerData = useContext(MapInfoContext);
-
   const spliced_items = items.slice(0, 10);
+
+  // const mapMarkerData = useContext(MapMarkerContext);
+  const updateMapMarkerContextFunction = useContext(UpdateMapMarkerContextFunction);
+  const updateMapCenterContextFunction = useContext(
+    UpdateMapCenterContextFunction
+  );
+
   return (
     <div className="basicmap-font">
       {spliced_items.map((item) => (
@@ -207,10 +262,13 @@ function LocationList({ items }) {
           key={item.attributes.opendata_id}
           className="mb-4 mr-1.5 flex flex-col items-start basicmap-item-box"
         >
-          <h2 id="episode-5-title" className="text-lg font-bold text-slate-900">
-            <a href="/5">{item.attributes.geojson.location}</a>
+          <h2
+            id={item.attributes.geojson.location}
+            className="text-lg font-bold text-slate-900 searchlist-location"
+          >
+            {item.attributes.geojson.location}
           </h2>
-          <p className="mt-1 text-base leading-5 text-slate-700">
+          <p className="mt-1 text-base leading-5 text-slate-700 searchlist-type">
             {item.attributes.geojson.type}
           </p>
           {/* <time
@@ -219,10 +277,10 @@ function LocationList({ items }) {
           >
             Last Updated: {item.attributes.date_updated}
           </time> */}
-          <p className="mt-1 font-mono text-xs leading-7 text-slate-500 leading-normal">
+          <p className="mt-1 font-mono text-xs leading-7 text-slate-500 leading-normal searchlist-address">
             Address: {item.attributes.geojson.address}
           </p>
-          <p className="font-mono text-xs leading-7 text-slate-500 leading-normal">
+          <p className="font-mono text-xs leading-7 text-slate-500 leading-normal searchlist-address">
             {item.attributes.geojson.location_details}
           </p>
           <div className="flex items-center gap-4">
@@ -258,7 +316,8 @@ function LocationList({ items }) {
                 className=""
                 aria-hidden="true"
                 onClick={function () {
-                  mapMarkerData.addMarkerToMapFunction(item);
+                  updateMapMarkerContextFunction(item);
+                  updateMapCenterContextFunction(item);
                 }}
               >
                 Show on Map

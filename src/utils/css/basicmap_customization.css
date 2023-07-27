@@ -28,3 +28,23 @@
   background: none;
   border: none;
 }
+
+/* List colors */
+
+.searchlist-location {
+  color: rgb(214, 210, 205);
+}
+
+.searchlist-type {
+  /* color: rgb(72, 189, 205); */
+  color: rgb(120, 189, 205);
+}
+
+.searchlist-address {
+  color: rgb(157, 148, 135);
+}
+
+.inputbar {
+  background-color: rgb(27, 29, 30);
+  border-color: rgb(60, 65, 67);
+}
