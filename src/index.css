@@ -33,3 +33,8 @@ code {
   flex-basis: 1.516px;
   flex-shrink: 0;
 }
+
+.loading-text {
+  /* same as .font-mono */
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}

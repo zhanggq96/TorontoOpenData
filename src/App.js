@@ -19,6 +19,12 @@ const UpdateMapMarkerContextFunction = createContext();
 const MapCenterContext = createContext();
 const UpdateMapCenterContextFunction = createContext();
 
+const defaultNumLocations = 10;
+const defaultNumLocationsIncrement = 5;
+
+const SearchlistNumlocationsContext = createContext();
+const UpdateSearchlistNumlocationsContextFunction = createContext();
+
 
 function App() {
   // --- API state ---
@@ -211,12 +217,20 @@ function BasicMapMarkers( {} ) {
 function FilterableList({ items }) {
   // console.log(items);
   const [query, setQuery] = useState("");
+  const [numListItems, setNumListItems] = useState(defaultNumLocations);
+  const [loadedAllListItems, setLoadedAllListItems] = useState(false);
 
   var results = null;
   if (items) {
     results = filterItems(items.data, query);
   } else {
-    return <div className="font-mono">Loading...</div>;
+    return <div className="loading-text">Loading...</div>;
+  }
+
+  function extendLocationlistResults(e) {
+    setNumListItems(numListItems + defaultNumLocationsIncrement);
+    setLoadedAllListItems(numListItems >= results.length ? true : false);
+    console.log("extendLocationlistResults: " + numListItems);
   }
 
   function handleChange(e) {
@@ -237,20 +251,29 @@ function FilterableList({ items }) {
     <div className="flex flex-col h-full w-full">
       <SearchBar className="w-full" query={query} onChange={handleChange} />
       {/* Horizontal Line */}
-      <hr className="my-4 border-t-0 bg-neutral-100 opacity-100 divider horizontal-divider"/>
+      <hr className="my-4 border-t-0 bg-neutral-100 opacity-100 divider horizontal-divider" />
       <div className="mx-0 place-items-start overflow-y-auto flex-grow">
-        <LocationList items={results} />
+        <LocationList items={results} numItems={numListItems} />
+        {results.length > 0 ? (
+          <LoadAdditionalButton
+            extendLocationlistResults={extendLocationlistResults}
+            loadedAll={loadedAllListItems}
+          ></LoadAdditionalButton>
+        ) : (
+          <div className="loading-text text-center">No results.</div>
+        )}
       </div>
     </div>
   );
 }
 
 // Template: https://transmit.tailwindui.com/
-function LocationList({ items }) {
-  const spliced_items = items.slice(0, 10);
+function LocationList({ items, numItems }) {
+  const spliced_items = items.slice(0, numItems);
 
-  // const mapMarkerData = useContext(MapMarkerContext);
-  const updateMapMarkerContextFunction = useContext(UpdateMapMarkerContextFunction);
+  const updateMapMarkerContextFunction = useContext(
+    UpdateMapMarkerContextFunction
+  );
   const updateMapCenterContextFunction = useContext(
     UpdateMapCenterContextFunction
   );
@@ -331,6 +354,21 @@ function LocationList({ items }) {
           </div>
         </div>
       ))}
+    </div>
+  );
+}
+
+function LoadAdditionalButton({ extendLocationlistResults, loadedAll }) {
+  return (
+    <div
+      className="loading-text text-center"
+      onClick={function () {
+        // updateMapMarkerContextFunction(item);
+        // updateMapCenterContextFunction(item);
+        extendLocationlistResults();
+      }}
+    >
+      {loadedAll ? <div>Reached end of list.</div> : <div>Load more...</div>}
     </div>
   );
 }
