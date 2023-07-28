@@ -46,6 +46,7 @@ export function SearchBar({ query, onChange }) {
           <button
             type="submit"
             className="absolute top-0 right-0 p-2.5 text-sm font-medium h-full text-white bg-pink-500 rounded-r-lg border border-pink-700 hover:bg-pink-800 focus:ring-4 focus:outline-none focus:ring-pink-300 dark:bg-pink-600 dark:hover:bg-pink-700 dark:focus:ring-pink-800"
+            disabled
           >
             <svg
               className="w-4 h-4"

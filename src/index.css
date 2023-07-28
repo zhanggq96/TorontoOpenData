@@ -31,12 +31,24 @@ code {
      otherwise the element resizes to smaller than height 
      when the list overflows. I don't know why. */
   height: 1.516px;
-  flex-basis: 1.516px;
+  /* flex-basis: 1.516px; */
   flex-shrink: 0;
+  width: 100%;
+  display: block;
 }
 
 .loading-text {
   /* same as .font-mono */
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   color: whitesmoke;
+}
+
+/* ------- */
+
+.break {
+  width: 100%;
+}
+
+.flex-grow {
+  flex: 1 0 auto;
 }

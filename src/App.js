@@ -148,17 +148,16 @@ function MapPageLayout({ locationData }) {
               ></FilterableList>
             </UpdateMapMarkerContextFunction.Provider>
           </div>
-          {/* <div className="inline-block h-full mx-4 w-0.5 self-stretch bg-neutral-100 opacity-100 divider"></div>
-          <div id="searchCol" className="w-1/4 h-full">
+          <div className="inline-block h-full mx-4 w-0.5 self-stretch bg-neutral-100 opacity-100 divider"></div>
+          <div id="infoCol" className="flex w-1/4 h-full">
             <UpdateMapMarkerContextFunction.Provider
               value={addMarkerToMapFunction}
             >
-              <FilterableList
-                className="h-full"
-                items={locationData}
-              ></FilterableList>
+              {/* <GenericButton customClass="ml-0" text="Show All"></GenericButton>
+              <GenericButton customClass="mr-0" text="Hide All"></GenericButton> */}
+              <InformationList></InformationList>
             </UpdateMapMarkerContextFunction.Provider>
-          </div> */}
+          </div>
         </UpdateMapCenterContextFunction.Provider>
       </div>
     </div>
@@ -240,7 +239,7 @@ function FilterableList({ items }) {
     console.log("extendLocationlistResults: " + numListItems);
   }
 
-  function handleChange(e) {
+  function searchbarChange(e) {
     setQuery(e.target.value);
     setNumListItems(defaultNumLocations);
     setLoadedAllListItems(false); // Workaround.
@@ -275,7 +274,7 @@ function FilterableList({ items }) {
     // outer takes height of parent
     // inner uses flex-grow to fill remaining space
     <div className="flex flex-col h-full w-full">
-      <SearchBar className="w-full" query={query} onChange={handleChange} />
+      <SearchBar className="w-full" query={query} onChange={searchbarChange} />
       {/* Horizontal Line */}
       <hr className="my-4 border-t-0 bg-neutral-100 opacity-100 divider horizontal-divider" />
       <div className="mx-0 place-items-start overflow-y-auto flex-grow">
@@ -395,6 +394,33 @@ function LoadAdditionalButton({ extendLocationlistResults, loadedAll }) {
       }}
     >
       {loadedAll ? <p>Reached end of list.</p> : <p>Load more...</p>}
+    </div>
+  );
+}
+
+function GenericButton({ text, onClick, customClass }) {
+  return (
+    <button
+      type="submit"
+      className={`p-0 basicmap-font text-sm font-medium text-white bg-pink-500 rounded-lg border border-pink-700 hover:bg-pink-800 focus:ring-4 focus:outline-none focus:ring-pink-300 dark:bg-pink-600 dark:hover:bg-pink-700 dark:focus:ring-pink-800 h-10 ${customClass}`}
+    >
+      {text}
+    </button>
+  );
+}
+
+function InformationList( {} ) {
+  return (
+    <div className="flex-wrap w-full">
+      <GenericButton
+        customClass="mx-2 w-[calc(50%-8px)] ml-0"
+        text="Show All"
+      ></GenericButton>
+      <GenericButton
+        customClass="mx-2 w-[calc(50%-8px)] mr-0"
+        text="Hide All"
+      ></GenericButton>
+      <hr className="my-4 border-t-0 bg-neutral-100 opacity-100 divider horizontal-divider" />
     </div>
   );
 }
