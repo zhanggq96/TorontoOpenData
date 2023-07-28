@@ -17,8 +17,9 @@ code {
 }
 
 .canvas {
-  width: 1376px;
-  height: 640px;
+  width: 1600px;
+  height: 800px;
+  background-color: rgb(3 7 18/var(--tw-bg-opacity));
 }
 
 .divider {
@@ -37,4 +38,5 @@ code {
 .loading-text {
   /* same as .font-mono */
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  color: whitesmoke;
 }

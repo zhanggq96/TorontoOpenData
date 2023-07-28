@@ -19,8 +19,8 @@
 /* Leaflet stuff */
 
 .leaflet-container {
-  width: 800px;
-  height: 640px; /* <-- map height */
+  width: 1000px;
+  height: 800px; /* <-- map height */
 }
 
 /* Ensure bg is transparent */
@@ -47,4 +47,5 @@
 .inputbar {
   background-color: rgb(27, 29, 30);
   border-color: rgb(60, 65, 67);
+  color: rgb(214, 211, 205);
 }

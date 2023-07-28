@@ -22,8 +22,8 @@ const UpdateMapCenterContextFunction = createContext();
 const defaultNumLocations = 10;
 const defaultNumLocationsIncrement = 5;
 
-const SearchlistNumlocationsContext = createContext();
-const UpdateSearchlistNumlocationsContextFunction = createContext();
+// const SearchlistNumlocationsContext = createContext();
+// const UpdateSearchlistNumlocationsContextFunction = createContext();
 
 
 function App() {
@@ -74,7 +74,6 @@ function App() {
 
 function CenterToMarkerLocationComponent({ coord }) {
   const map = useMap();
-  const targetLatLng = latLng(coord[0], coord[1]);
 
   useEffect(() => {
     // Fly to the specified location with the given zoom level
@@ -138,11 +137,8 @@ function MapPageLayout({ locationData }) {
 
         {/* Vertical Line */}
         <div className="inline-block h-full mx-4 w-0.5 self-stretch bg-neutral-100 opacity-100 divider"></div>
-
-        <div className="w-1/4 h-full">
-          <UpdateMapCenterContextFunction.Provider
-            value={centerToMarkerLocation}
-          >
+        <UpdateMapCenterContextFunction.Provider value={centerToMarkerLocation}>
+          <div id="searchCol" className="w-1/4 h-full">
             <UpdateMapMarkerContextFunction.Provider
               value={addMarkerToMapFunction}
             >
@@ -151,8 +147,19 @@ function MapPageLayout({ locationData }) {
                 items={locationData}
               ></FilterableList>
             </UpdateMapMarkerContextFunction.Provider>
-          </UpdateMapCenterContextFunction.Provider>
-        </div>
+          </div>
+          {/* <div className="inline-block h-full mx-4 w-0.5 self-stretch bg-neutral-100 opacity-100 divider"></div>
+          <div id="searchCol" className="w-1/4 h-full">
+            <UpdateMapMarkerContextFunction.Provider
+              value={addMarkerToMapFunction}
+            >
+              <FilterableList
+                className="h-full"
+                items={locationData}
+              ></FilterableList>
+            </UpdateMapMarkerContextFunction.Provider>
+          </div> */}
+        </UpdateMapCenterContextFunction.Provider>
       </div>
     </div>
   );
@@ -184,7 +191,7 @@ function BasicMap( {} ) {
         </>
       ) : (
         // Render a loading text or any other placeholder when current_center is undefined
-        <div>Loading...</div>
+        <div className="loading-text">Loading...</div>
       )}
     </MapContainer>
   );
@@ -229,12 +236,31 @@ function FilterableList({ items }) {
 
   function extendLocationlistResults(e) {
     setNumListItems(numListItems + defaultNumLocationsIncrement);
-    setLoadedAllListItems(numListItems >= results.length ? true : false);
+    setLoadedAllListItems(numListItems >= results.length);
     console.log("extendLocationlistResults: " + numListItems);
   }
 
   function handleChange(e) {
     setQuery(e.target.value);
+    setNumListItems(defaultNumLocations);
+    setLoadedAllListItems(false); // Workaround.
+    // Current problem is that calling results.length gives the length of the
+    // Previous query, rather than the current one. e.g.
+    // Enter c, get 500. Enter cl, get ~80. Enter clo, get ~12.
+    // Remove o to go back to cl, get 4. When 4 is the number of
+    // queries for clo.
+
+    // The workaround just always displays "load more..." and if clicked
+    // when nothing left, displays "all loaded" only then,
+    // rather than preemptively.
+
+    // setLoadedAllListItems(numListItems >= results.length);
+    // console.log("loadedAllListItems e.target.value: " + e.target.value);
+    // console.log("loadedAllListItems results.length: " + results.length);
+    // console.log(
+    //   "loadedAllListItems numListItems >= results.length: " +
+    //     (numListItems >= results.length)
+    // );
   }
 
   return (
@@ -368,7 +394,7 @@ function LoadAdditionalButton({ extendLocationlistResults, loadedAll }) {
         extendLocationlistResults();
       }}
     >
-      {loadedAll ? <div>Reached end of list.</div> : <div>Load more...</div>}
+      {loadedAll ? <p>Reached end of list.</p> : <p>Load more...</p>}
     </div>
   );
 }
