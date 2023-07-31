@@ -1,7 +1,13 @@
 import React, { useState, useEffect, createContext, useContext } from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
-import { filterItems, SearchBar } from "./utils/js/searchbar_utils";
+import { itemFormatter, coordFormatter } from "./utils/js/dataset_format_utils";
+import {
+  filterSearchTerm,
+  LocationSearchBar,
+  FacilityFilterSearchBar,
+  PointIcon,
+} from "./utils/js/searchbar_utils";
 import {
   iconMarker,
   mapInitZoom,
@@ -17,6 +23,10 @@ const MapMarkerContext = createContext();
 const UpdateMapMarkerContextFunction = createContext();
 const MapCenterContext = createContext();
 const UpdateMapCenterContextFunction = createContext();
+
+// --- Infobar state data ---
+const InfoBarContext = createContext();
+const UpdateInfoBarContext = createContext();
 
 const defaultNumLocations = 10;
 const defaultNumLocationsIncrement = 5;
@@ -85,7 +95,7 @@ function CenterToMarkerLocationComponent({ coord }) {
 }
 
 function MapPageLayout({ locationData }) {
-  // --- Map Marker state ---
+  // --- Map marker state ---
   // Attributes: opendata_id, location, name
   const [mapMarkerContextState, setmapMarkerContextState] = useState({
     display_markers: {},
@@ -108,7 +118,6 @@ function MapPageLayout({ locationData }) {
 
     // Update the state with the new object
     setmapMarkerContextState(updatedMapMarkerContextState);
-    // console.log(updatedContextState);
   }
 
   const [mapCenterContextState, setMapCenterContextState] = useState({
@@ -119,40 +128,62 @@ function MapPageLayout({ locationData }) {
     setMapCenterContextState({
       center: item.attributes.geojson.geometry.coordinates,
     });
-    console.log("centerToMarkerLocation: " + item.attributes.geojson.geometry.coordinates);
+    console.log(
+      "centerToMarkerLocation: " + item.attributes.geojson.geometry.coordinates
+    );
   }
+  // --- End map marker state ---
+  // 
+  // --- Begin infobar state ---
+  const [infobarState, setInfobarState] = useState({
+    item: itemFormatter(null),
+  });
+
+  function setInfobarTo(item) {
+    const formatted_item = itemFormatter(item);
+    setInfobarState({
+      item: formatted_item,
+    });
+  }
+  // --- End infobar state ---
 
   return (
     // MapCenterContext
     <div className="bg-gray-950 flex justify-center items-center min-h-screen p-10">
-      <div className="canvas flex">
-        <div id="map" className="leaflet-container w-3/4 h-full">
-          <MapCenterContext.Provider value={mapCenterContextState}>
-            <MapMarkerContext.Provider value={mapMarkerContextState}>
-              <BasicMap></BasicMap>
-            </MapMarkerContext.Provider>
-          </MapCenterContext.Provider>
-        </div>
-        
-        {/* Vertical Line */}
-        <div className="inline-block h-full mx-4 w-0.5 self-stretch bg-neutral-100 opacity-100 divider"></div>
-        <UpdateMapCenterContextFunction.Provider value={centerToMarkerLocation}>
-          <UpdateMapMarkerContextFunction.Provider
-            value={addMarkerToMapFunction}
+      <UpdateInfoBarContext.Provider value={setInfobarTo}>
+        <div className="canvas flex">
+          <div id="map" className="leaflet-container w-3/4 h-full">
+            <MapCenterContext.Provider value={mapCenterContextState}>
+              <MapMarkerContext.Provider value={mapMarkerContextState}>
+                <BasicMap></BasicMap>
+              </MapMarkerContext.Provider>
+            </MapCenterContext.Provider>
+          </div>
+
+          {/* Vertical Line */}
+          <div className="inline-block h-full mx-4 w-0.5 self-stretch bg-neutral-100 opacity-100 divider"></div>
+          <UpdateMapCenterContextFunction.Provider
+            value={centerToMarkerLocation}
           >
-            <div id="searchCol" className="w-1/4 h-full">
+            <UpdateMapMarkerContextFunction.Provider
+              value={addMarkerToMapFunction}
+            >
+              <div id="searchCol" className="w-1/4 h-full">
                 <FilterableList
                   className="h-full"
                   items={locationData}
                 ></FilterableList>
-            </div>
-            <div className="inline-block h-full mx-4 w-0.5 self-stretch bg-neutral-100 opacity-100 divider"></div>
-            <div id="infoCol" className="w-1/4 h-full">
-                <InformationList></InformationList>
-            </div>
-          </UpdateMapMarkerContextFunction.Provider>
-        </UpdateMapCenterContextFunction.Provider>
-      </div>
+              </div>
+              <div className="inline-block h-full mx-4 w-0.5 self-stretch bg-neutral-100 opacity-100 divider"></div>
+              <InfoBarContext.Provider value={infobarState}>
+                <div id="infoCol" className="w-1/4 h-full">
+                  <InformationList></InformationList>
+                </div>
+              </InfoBarContext.Provider>
+            </UpdateMapMarkerContextFunction.Provider>
+          </UpdateMapCenterContextFunction.Provider>
+        </div>
+      </UpdateInfoBarContext.Provider>
     </div>
   );
 }
@@ -223,7 +254,7 @@ function FilterableList({ items }) {
 
   var results = null;
   if (items) {
-    results = filterItems(items.data, query);
+    results = filterSearchTerm(items.data, query);
   } else {
     return <div className="loading-text">Loading...</div>;
   }
@@ -247,14 +278,6 @@ function FilterableList({ items }) {
     // The workaround just always displays "load more..." and if clicked
     // when nothing left, displays "all loaded" only then,
     // rather than preemptively.
-
-    // setLoadedAllListItems(numListItems >= results.length);
-    // console.log("loadedAllListItems e.target.value: " + e.target.value);
-    // console.log("loadedAllListItems results.length: " + results.length);
-    // console.log(
-    //   "loadedAllListItems numListItems >= results.length: " +
-    //     (numListItems >= results.length)
-    // );
   }
 
   return (
@@ -269,7 +292,11 @@ function FilterableList({ items }) {
     // outer takes height of parent
     // inner uses flex-grow to fill remaining space
     <div className="flex flex-col h-full w-full">
-      <SearchBar className="w-full" query={query} onChange={searchbarChange} />
+      <LocationSearchBar
+        className="w-full"
+        query={query}
+        onChange={searchbarChange}
+      />
       {/* Horizontal Line */}
       <hr className="my-4 border-t-0 bg-neutral-100 opacity-100 divider horizontal-divider" />
       <div className="mx-0 place-items-start overflow-y-auto">
@@ -297,6 +324,9 @@ function LocationList({ items, numItems }) {
   const updateMapCenterContextFunction = useContext(
     UpdateMapCenterContextFunction
   );
+  const updateInfoBarContext = useContext(
+    UpdateInfoBarContext
+  );
 
   return (
     <div className="basicmap-font">
@@ -314,12 +344,6 @@ function LocationList({ items, numItems }) {
           <p className="mt-1 text-base leading-5 text-slate-700 searchlist-type">
             {item.attributes.geojson.type}
           </p>
-          {/* <time
-            dateTime="2022-02-24T00:00:00.000Z"
-            className="font-mono text-sm leading-7 text-slate-500"
-          >
-            Last Updated: {item.attributes.date_updated}
-          </time> */}
           <p className="mt-1 font-mono text-xs leading-7 text-slate-500 leading-normal searchlist-address">
             Address: {item.attributes.geojson.address}
           </p>
@@ -331,15 +355,11 @@ function LocationList({ items, numItems }) {
               type="button"
               className="flex items-center text-sm font-bold leading-6 text-pink-500 hover:text-pink-700 active:text-pink-900"
               aria-label={item.attributes.geojson.type}
+              onClick={function(){
+                updateInfoBarContext(item);
+              }}
             >
-              <svg
-                aria-hidden="true"
-                viewBox="0 0 10 10"
-                fill="none"
-                className="h-2.5 w-2.5 fill-current"
-              >
-                <path d="M8.25 4.567a.5.5 0 0 1 0 .866l-7.5 4.33A.5.5 0 0 1 0 9.33V.67A.5.5 0 0 1 .75.237l7.5 4.33Z"></path>
-              </svg>
+              <PointIcon></PointIcon>
               <span className="ml-3" aria-hidden="true">
                 More Information
               </span>
@@ -404,76 +424,6 @@ function GenericButton({ text, onClick, customClass }) {
   );
 }
 
-function FilterBar({ text, placeholder, onChange }) {
-  return (
-    <div className="relative w-full basicmap-font my-2">
-      {/* using flex forces button underneath searchbar element */}
-      <input
-        type="search"
-        id="search-dropdown"
-        className="block p-2.5 w-full z-20 text-sm text-gray-900 bg-gray-50 rounded-lg border-l-gray-50 border-l-2 border border-gray-300 focus:ring-pink-500 focus:border-pink-500 dark:bg-gray-700 dark:border-l-gray-700  dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:border-pink-500 inputbar"
-        placeholder="Filter by facility (e.g. fountain)"
-      />
-      <button
-        type="submit"
-        className="absolute top-0 right-0 p-2.5 text-sm font-medium h-full text-white bg-pink-500 rounded-r-lg border border-pink-700 hover:bg-pink-800 focus:ring-4 focus:outline-none focus:ring-pink-300 dark:bg-pink-600 dark:hover:bg-pink-700 dark:focus:ring-pink-800 button"
-        // disabled
-      >
-        <p>Apply</p>
-        <span className="sr-only">Search</span>
-      </button>
-    </div>
-  );
-}
-
-function FacilityInfoBar( {item} ) {
-  return (
-    <div className="mt-2 basicmap-font">
-      <div className="w-full p-2 rounded-t-xl infobar-wrapper">
-        <h1 className="infobar-header">Facility Information</h1>
-      </div>
-
-      <div className="infobar-wrapper p-2 border-t-0">
-        <div className="relative">
-          <div
-            key="sample"
-            className="mb-4 mr-1.5 flex flex-col items-start basicmap-item-box"
-          >
-            <h2
-              id="sample"
-              className="text-lg font-bold text-slate-900 searchlist-location"
-            >
-              item.attributes.geojson.location
-            </h2>
-            <p className="mt-1 text-base leading-5 text-slate-700 searchlist-type">
-              item.attributes.geojson.type
-            </p>
-            <p className="mt-1 font-mono text-xs leading-7 text-slate-500 leading-normal searchlist-address">
-              Address: item.attributes.geojson.address
-            </p>
-            <p className="mt-1 font-mono text-xs leading-7 text-slate-500 leading-normal searchlist-coordinates">
-              Coordinates: item.attributes.geojson.geometry.coordinates
-            </p>
-            <p className="font-mono text-xs leading-7 text-slate-500 leading-normal searchlist-details">
-              item.attributes.geojson.location_details
-            </p>
-            <p className="mt-1 font-mono text-xs leading-7 text-slate-500 leading-normal searchlist-url">
-              URL: item.attributes.geojson.url
-            </p>
-            <time
-              dateTime="2022-02-24T00:00:00.000Z"
-              className="font-mono text-sm leading-7 text-slate-500 searchlist-updated"
-            >
-              Last Updated: item.attributes.date_updated
-            </time>
-          </div>
-        </div>
-      </div>
-      <div className="code-syntax-wrapper"></div>
-    </div>
-  );
-}
-
 function InformationList( {} ) {
   // const facilityInfoBarItem = useContext(FacilityInfoBarItemContext);
   const updateMapMarkerContextFunction = useContext(
@@ -490,9 +440,64 @@ function InformationList( {} ) {
         customClass="mx-2 w-[calc(50%-8px)] mr-0"
         text="Hide All"
       ></GenericButton>
-      <FilterBar></FilterBar>
+      <FacilityFilterSearchBar></FacilityFilterSearchBar>
+      {/* <FilterBar></FilterBar> */}
       <hr className="my-4 border-t-0 bg-neutral-100 opacity-100 divider horizontal-divider" />
       <FacilityInfoBar></FacilityInfoBar>
+    </div>
+  );
+}
+
+function FacilityInfoBar({ item }) {
+  // Built-in handling of null or undefined objects:
+  // will default to displaying generic terms e.g. "Location"
+  // const display_item = itemFormatter(item);
+  const infoBarContext = useContext(InfoBarContext);
+  const display_item = infoBarContext.item;
+
+  return (
+    <div className="mt-2 basicmap-font">
+      <div className="w-full p-2 rounded-t-xl infobar-wrapper">
+        <h1 className="infobar-header">Facility Information</h1>
+      </div>
+
+      <div className="infobar-wrapper p-2 border-t-0">
+        <div className="relative">
+          <div
+            key="sample"
+            className="mb-4 mr-1.5 flex flex-col items-start basicmap-item-box"
+          >
+            <h2
+              id="sample"
+              className="text-lg font-bold text-slate-900 searchlist-location"
+            >
+              {display_item.name}
+            </h2>
+            <p className="mt-1 text-base leading-5 text-slate-700 searchlist-type">
+              {display_item.type}
+            </p>
+            <p className="mt-1 font-mono text-xs leading-7 text-slate-500 leading-normal searchlist-address">
+              Address: {display_item.address}
+            </p>
+            <p className="mt-1 font-mono text-xs leading-7 text-slate-500 leading-normal searchlist-coordinates">
+              Coordinates: {coordFormatter(display_item.coordinates)}
+            </p>
+            <p className="mt-1 font-mono text-xs leading-7 text-slate-500 leading-normal searchlist-details">
+              {display_item.location_details}
+            </p>
+            <p className="mt-1 font-mono text-xs leading-7 text-slate-500 leading-normal searchlist-url">
+              Link: <a href={display_item.url}>{display_item.url}</a>
+            </p>
+            <time
+              dateTime="2022-02-24T00:00:00.000Z"
+              className="font-mono text-sm leading-7 text-slate-500 searchlist-updated"
+            >
+              Last Updated: {display_item.date_updated}
+            </time>
+          </div>
+        </div>
+      </div>
+      <div className="code-syntax-wrapper"></div>
     </div>
   );
 }
