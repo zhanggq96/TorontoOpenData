@@ -29,6 +29,21 @@
   border: none;
 }
 
+/* Overwrite leaflet's default */
+.leaflet-popup-content-wrapper {
+  background-color: rgb(24, 26, 27);
+  color: #e8e6e3;
+}
+
+.leaflet-popup-tip {
+  background-color: rgb(24, 26, 27);
+}
+
+.leaflet-popup-content p {
+  margin-top: 0px;
+  margin-bottom: 0px;
+}
+
 /* List colors */
 
 .searchlist-location {

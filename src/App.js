@@ -7,6 +7,7 @@ import {
   LocationSearchBar,
   FacilityFilterSearchBar,
   PointIcon,
+  ExpandInfo,
 } from "./utils/js/searchbar_utils";
 import {
   iconMarker,
@@ -98,21 +99,21 @@ function MapPageLayout({ locationData }) {
   // --- Map marker state ---
   // Attributes: opendata_id, location, name
   const [mapMarkerContextState, setmapMarkerContextState] = useState({
-    display_markers: {},
+    display_items: {},
   });
 
   function addMarkerToMapFunction(item) {
-    const newMarker = {
-      opendata_id: item.attributes.opendata_id,
-      coordinates: item.attributes.geojson.geometry.coordinates,
-      name: item.attributes.geojson.location,
-    };
+    // const newMarker = {
+    //   opendata_id: item.attributes.opendata_id,
+    //   coordinates: item.attributes.geojson.geometry.coordinates,
+    //   name: item.attributes.geojson.location,
+    // };
 
     // Create a new object with the updated display_markers
     const updatedMapMarkerContextState = {
-      display_markers: {
-        ...mapMarkerContextState.display_markers,
-        [item.attributes.opendata_id]: newMarker,
+      display_items: {
+        ...mapMarkerContextState.display_items,
+        [item.attributes.opendata_id]: item,
       },
     };
 
@@ -199,7 +200,7 @@ function BasicMap( {} ) {
       center={mapInitCenter} // Use something fixed for this, else map grey every time update this file
       zoom={mapInitZoom}
       scrollWheelZoom={true}
-      attributionControl={false}
+      // attributionControl={false}
       // position="bottomleft"
     >
       <TileLayer
@@ -215,7 +216,6 @@ function BasicMap( {} ) {
           <CenterToMarkerLocationComponent coord={current_center} />
         </>
       ) : (
-        // Render a loading text or any other placeholder when current_center is undefined
         <div className="loading-text">Loading...</div>
       )}
     </MapContainer>
@@ -225,20 +225,29 @@ function BasicMap( {} ) {
 function BasicMapMarkers( {} ) {
   // To extract map markers from global context:
   const mapInfo = useContext(MapMarkerContext);
-  const map_markers = mapInfo.display_markers;
+  const map_items = mapInfo.display_items;
   // console.log("BasicMapMarkers");
   // console.log(map_markers);
 
   return (
     <>
-      {Object.entries(map_markers).map(([opendata_id, marker]) => (
+      {Object.entries(map_items).map(([opendata_id, item]) => (
         <div key={opendata_id} className="leaflet-marker-container">
           <Marker
             className="leaflet-div-icon"
-            position={marker.coordinates}
+            position={itemFormatter(item).coordinates}
             icon={iconMarker}
           >
-            <Popup>{marker.name}</Popup>
+            <Popup>
+              <p className="my-0">Location: {itemFormatter(item).name}</p>
+              {/* <p className="my-0">More Information</p> */}
+              <ExpandInfo
+                item={item}
+                text="More Information"
+                onclick={function () {}} // TODO
+                customClass="text-xs"
+              ></ExpandInfo>
+            </Popup>
           </Marker>
         </div>
       ))}
@@ -456,7 +465,7 @@ function FacilityInfoBar({ item }) {
   const display_item = infoBarContext.item;
 
   return (
-    <div className="mt-2 basicmap-font">
+    <div className="mt-2 basicmap-font overflow-y-auto">
       <div className="w-full p-2 rounded-t-xl infobar-wrapper">
         <h1 className="infobar-header">Facility Information</h1>
       </div>

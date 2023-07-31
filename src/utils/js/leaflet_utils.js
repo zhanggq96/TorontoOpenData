@@ -20,7 +20,7 @@ export const iconMarker = new L.Icon({
   // Proper iconAnchor value to center bottom middle:
   // https://gis.stackexchange.com/questions/352480/why-my-markers-move-when-i-resize-my-map-on-leaflet
   iconAnchor: new L.Point(leaflet_marker_length / 2.0, leaflet_marker_height),
-  popupAnchor: new L.Point(0, 0),
+  popupAnchor: new L.Point(1, -40),
   shadowUrl: null,
   shadowAnchor: null,
   className: "leaflet-div-icon",

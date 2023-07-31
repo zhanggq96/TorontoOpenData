@@ -1,13 +1,3 @@
-// export function filterItems(items, query) {
-//   query = query.toLowerCase();
-//   return items.filter(item =>
-//     item.geojson.split(' ').some(word =>
-//       word.toLowerCase().startsWith(query)
-//     )
-//   );
-// }
-
-// ChatGPT:
 // This modified function will return a new array that contains 
 // only the elements from the items array where every word in the 
 // query string matches the start of some word in item.attributes.geojson.location.
@@ -109,5 +99,23 @@ export function FacilityFilterSearchBar({ query, onChange }) {
       text="Filter by facility (e.g. fountain)"
       customClass="my-2"
     ></SearchBar>
+  );
+}
+
+export function ExpandInfo({ item, text, onclick, customClass }) {
+  return (
+    <button
+      type="button"
+      className={`flex items-center text-sm font-bold leading-6 text-pink-500 hover:text-pink-700 active:text-pink-900 ${customClass}`}
+      aria-label={item.attributes.geojson.type}
+      onClick={function () {
+        onclick(item);
+      }}
+    >
+      <PointIcon></PointIcon>
+      <span className="ml-3" aria-hidden="true">
+        {text}
+      </span>
+    </button>
   );
 }

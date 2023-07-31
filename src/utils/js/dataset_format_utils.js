@@ -36,6 +36,7 @@
 // }
 
 export function itemFormatter(item) {
+  console.log("itemFormatter: " + item);
   // Extract a few display elements from the API
   // This should never be passed around: only as a preprocessing
   // step before displaying information
@@ -50,8 +51,8 @@ export function itemFormatter(item) {
       date_updated: "Date Updated",
     };
   }
+  console.log("itemFormatter: " + item.attributes.geojson.location);
     
-  
   const reformatted = {
     name: item.attributes.geojson.location,
     type: item.attributes.geojson.type,
@@ -72,7 +73,7 @@ export function coordFormatter(coord) {
     return "Unknown format";
   }
   console.log("coord.type: " + typeof coord);
-  const reformatted = coord.map((value) => value.toFixed(2)).join(', ')
+  const reformatted = coord.map((value) => value.toFixed(4)).join(', ')
 
   return reformatted;
 }
