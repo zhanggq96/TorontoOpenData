@@ -5,11 +5,21 @@ export function filterSearchTerm(items, query) {
   const queryWords = query.toLowerCase().split(" ");
 
   return items.filter((item) =>
-    queryWords.every((queryWord) =>
-      item.attributes.geojson.location
-        .split(" ")
-        .some((word) => word.toLowerCase().startsWith(queryWord))
-    )
+    everyStartFound(item.attributes.geojson.location, queryWords)
+  );
+}
+
+export function filterFacilityType(items, query) {
+  const queryWords = query.toLowerCase().split(" ");
+
+  return items.filter((item) =>
+    everyStartFound(item.attributes.geojson.type, queryWords)
+  );
+}
+
+function everyStartFound(words, queryWords) {
+  return queryWords.every((queryWord) =>
+    words.split(" ").some((word) => word.toLowerCase().startsWith(queryWord))
   );
 }
 

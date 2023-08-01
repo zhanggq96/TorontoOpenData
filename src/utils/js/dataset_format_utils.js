@@ -36,7 +36,7 @@
 // }
 
 export function itemFormatter(item) {
-  console.log("itemFormatter: " + item);
+  // console.log("itemFormatter: " + item);
   // Extract a few display elements from the API
   // This should never be passed around: only as a preprocessing
   // step before displaying information
@@ -51,7 +51,7 @@ export function itemFormatter(item) {
       date_updated: "Date Updated",
     };
   }
-  console.log("itemFormatter: " + item.attributes.geojson.location);
+  // console.log("itemFormatter: " + item.attributes.geojson.location);
     
   const reformatted = {
     name: item.attributes.geojson.location,

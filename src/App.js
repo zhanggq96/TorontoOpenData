@@ -4,6 +4,7 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import { itemFormatter, coordFormatter } from "./utils/js/dataset_format_utils";
 import {
   filterSearchTerm,
+  filterFacilityType,
   LocationSearchBar,
   FacilityFilterSearchBar,
   PointIcon,
@@ -25,9 +26,17 @@ const UpdateMapMarkerContextFunction = createContext();
 const MapCenterContext = createContext();
 const UpdateMapCenterContextFunction = createContext();
 
+// --- List state data ---
+const SearchQuery = createContext();
+const UpdateSearchQuery = createContext();
+
 // --- Infobar state data ---
 const InfoBarContext = createContext();
 const UpdateInfoBarContext = createContext();
+
+// Set input through infobar, applied to searchbar to filter by type.
+const FacilityFilterForSearchlistContext = createContext();
+const UpdateFacilityFilterForSearchlistContext = createContext();
 
 const defaultNumLocations = 10;
 const defaultNumLocationsIncrement = 5;
@@ -84,6 +93,7 @@ function App() {
 
 function CenterToMarkerLocationComponent({ coord }) {
   const map = useMap();
+  // const coord_ = Object.assign({}, coord);
 
   useEffect(() => {
     // Fly to the specified location with the given zoom level
@@ -103,12 +113,6 @@ function MapPageLayout({ locationData }) {
   });
 
   function addMarkerToMapFunction(item) {
-    // const newMarker = {
-    //   opendata_id: item.attributes.opendata_id,
-    //   coordinates: item.attributes.geojson.geometry.coordinates,
-    //   name: item.attributes.geojson.location,
-    // };
-
     // Create a new object with the updated display_markers
     const updatedMapMarkerContextState = {
       display_items: {
@@ -126,15 +130,23 @@ function MapPageLayout({ locationData }) {
   });
 
   function centerToMarkerLocation(item) {
-    setMapCenterContextState({
-      center: item.attributes.geojson.geometry.coordinates,
-    });
     console.log(
       "centerToMarkerLocation: " + item.attributes.geojson.geometry.coordinates
     );
+    setMapCenterContextState({
+      center: item.attributes.geojson.geometry.coordinates,
+    });
   }
   // --- End map marker state ---
-  // 
+  //
+  // --- Begin search query state ---
+  const [searchQueryState, setSearchQueryState] = useState({
+    searchQuery: "",
+    numListItems: defaultNumLocations,
+    increment: defaultNumLocationsIncrement,
+  });
+  // --- End search query state ---
+  //
   // --- Begin infobar state ---
   const [infobarState, setInfobarState] = useState({
     item: itemFormatter(null),
@@ -146,44 +158,67 @@ function MapPageLayout({ locationData }) {
       item: formatted_item,
     });
   }
+
+  const [
+    facilityFilterForSearchlistState,
+    setFacilityFilterForSearchlistState,
+  ] = useState({
+    filterquery: "",
+  });
+
+  function updateFacilityFilterSearchbar(e) {
+    setFacilityFilterForSearchlistState(e.target.value);
+  }
   // --- End infobar state ---
 
   return (
     // MapCenterContext
     <div className="bg-gray-950 flex justify-center items-center min-h-screen p-10">
       <UpdateInfoBarContext.Provider value={setInfobarTo}>
-        <div className="canvas flex">
-          <div id="map" className="leaflet-container w-3/4 h-full">
-            <MapCenterContext.Provider value={mapCenterContextState}>
-              <MapMarkerContext.Provider value={mapMarkerContextState}>
-                <BasicMap></BasicMap>
-              </MapMarkerContext.Provider>
-            </MapCenterContext.Provider>
-          </div>
+        <UpdateSearchQuery.Provider value={setSearchQueryState}>
+          <div className="canvas flex">
+            <div id="map" className="leaflet-container w-3/4 h-full">
+              <MapCenterContext.Provider value={mapCenterContextState}>
+                <MapMarkerContext.Provider value={mapMarkerContextState}>
+                  <BasicMap></BasicMap>
+                </MapMarkerContext.Provider>
+              </MapCenterContext.Provider>
+            </div>
 
-          {/* Vertical Line */}
-          <div className="inline-block h-full mx-4 w-0.5 self-stretch bg-neutral-100 opacity-100 divider"></div>
-          <UpdateMapCenterContextFunction.Provider
-            value={centerToMarkerLocation}
-          >
-            <UpdateMapMarkerContextFunction.Provider
-              value={addMarkerToMapFunction}
+            {/* Vertical Line */}
+            <div className="inline-block h-full mx-4 w-0.5 self-stretch bg-neutral-100 opacity-100 divider"></div>
+            <UpdateMapCenterContextFunction.Provider
+              value={centerToMarkerLocation}
             >
-              <div id="searchCol" className="w-1/4 h-full">
-                <FilterableList
-                  className="h-full"
-                  items={locationData}
-                ></FilterableList>
-              </div>
-              <div className="inline-block h-full mx-4 w-0.5 self-stretch bg-neutral-100 opacity-100 divider"></div>
-              <InfoBarContext.Provider value={infobarState}>
-                <div id="infoCol" className="w-1/4 h-full">
-                  <InformationList></InformationList>
-                </div>
-              </InfoBarContext.Provider>
-            </UpdateMapMarkerContextFunction.Provider>
-          </UpdateMapCenterContextFunction.Provider>
-        </div>
+              <UpdateMapMarkerContextFunction.Provider
+                value={addMarkerToMapFunction}
+              >
+                <FacilityFilterForSearchlistContext.Provider
+                  value={facilityFilterForSearchlistState}
+                >
+                  <SearchQuery.Provider value={searchQueryState}>
+                    <div id="searchCol" className="w-1/4 h-full">
+                      <FilterableList
+                        className="h-full"
+                        items={locationData}
+                      ></FilterableList>
+                    </div>
+                  </SearchQuery.Provider>
+                </FacilityFilterForSearchlistContext.Provider>
+                <div className="inline-block h-full mx-4 w-0.5 self-stretch bg-neutral-100 opacity-100 divider"></div>
+                <InfoBarContext.Provider value={infobarState}>
+                  <UpdateFacilityFilterForSearchlistContext.Provider
+                    value={updateFacilityFilterSearchbar}
+                  >
+                    <div id="infoCol" className="w-1/4 h-full">
+                      <InformationList></InformationList>
+                    </div>
+                  </UpdateFacilityFilterForSearchlistContext.Provider>
+                </InfoBarContext.Provider>
+              </UpdateMapMarkerContextFunction.Provider>
+            </UpdateMapCenterContextFunction.Provider>
+          </div>
+        </UpdateSearchQuery.Provider>
       </UpdateInfoBarContext.Provider>
     </div>
   );
@@ -226,8 +261,8 @@ function BasicMapMarkers( {} ) {
   // To extract map markers from global context:
   const mapInfo = useContext(MapMarkerContext);
   const map_items = mapInfo.display_items;
-  // console.log("BasicMapMarkers");
-  // console.log(map_markers);
+  
+  const updateInfoBarTo = useContext(UpdateInfoBarContext);
 
   return (
     <>
@@ -244,7 +279,7 @@ function BasicMapMarkers( {} ) {
               <ExpandInfo
                 item={item}
                 text="More Information"
-                onclick={function () {}} // TODO
+                onclick={function () {updateInfoBarTo(item)}} // TODO
                 customClass="text-xs"
               ></ExpandInfo>
             </Popup>
@@ -256,19 +291,32 @@ function BasicMapMarkers( {} ) {
 }
 
 function FilterableList({ items }) {
-  // console.log(items);
+  
+  // Filter by facility type
+  const facilityFilterForSearchlistContext = useContext(FacilityFilterForSearchlistContext);
+  // const updatefacilityFilterForSearchlistContext = createContext(UpdatefacilityFilterForSearchlistContext);
+
   const [query, setQuery] = useState("");
   const [numListItems, setNumListItems] = useState(defaultNumLocations);
   const [loadedAllListItems, setLoadedAllListItems] = useState(false);
 
+  // const searchQuery = useContext(SearchQuery);
+  // const updateSearchQuery = useContext(UpdateSearchQuery);
+
   var results = null;
   if (items) {
-    results = filterSearchTerm(items.data, query);
+    // results = filterSearchTerm(items.data, query);
+    // console.log(results.slice(0, 10));
+    // console.log(items.data.slice(0, 10));
+    results = filterFacilityType(
+      filterSearchTerm(items.data, query),
+      facilityFilterForSearchlistContext.filterquery
+    );
   } else {
     return <div className="loading-text">Loading...</div>;
   }
 
-  function extendLocationlistResults(e) {
+  function extendLocationlistResults() {
     setNumListItems(numListItems + defaultNumLocationsIncrement);
     setLoadedAllListItems(numListItems >= results.length);
     console.log("extendLocationlistResults: " + numListItems);
@@ -288,6 +336,12 @@ function FilterableList({ items }) {
     // when nothing left, displays "all loaded" only then,
     // rather than preemptively.
   }
+
+  // function filterTypeBarChange(e) {
+  //   setQuery(e.target.value);
+  //   setNumListItems(defaultNumLocations);
+  //   setLoadedAllListItems(false); // Workaround.
+  // }
 
   return (
     // Removed overflow-y-auto from this one so it has no scrollwheel
@@ -439,6 +493,10 @@ function InformationList( {} ) {
     UpdateMapMarkerContextFunction
   );
 
+  const updatefacilityFilterForSearchlistFunction = useContext(
+    UpdateFacilityFilterForSearchlistContext
+  );
+
   return (
     <div className="flex-wrap w-full">
       <GenericButton
@@ -448,6 +506,10 @@ function InformationList( {} ) {
       <GenericButton
         customClass="mx-2 w-[calc(50%-8px)] mr-0"
         text="Hide All"
+      ></GenericButton>
+      <GenericButton
+        customClass="mx-2 w-[calc(100%)] ml-0 mt-2"
+        text="Show All of Type:"
       ></GenericButton>
       <FacilityFilterSearchBar></FacilityFilterSearchBar>
       {/* <FilterBar></FilterBar> */}
@@ -495,7 +557,10 @@ function FacilityInfoBar({ item }) {
               {display_item.location_details}
             </p>
             <p className="mt-1 font-mono text-xs leading-7 text-slate-500 leading-normal searchlist-url">
-              Link: <a href={display_item.url}>{display_item.url}</a>
+              Link:{" "}
+              <a href={display_item.url} target="_blank">
+                {display_item.url}
+              </a>
             </p>
             <time
               dateTime="2022-02-24T00:00:00.000Z"
