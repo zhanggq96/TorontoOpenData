@@ -167,7 +167,8 @@ function MapPageLayout({ locationData }) {
   });
 
   function updateFacilityFilterSearchbar(e) {
-    setFacilityFilterForSearchlistState(e.target.value);
+    // setFacilityFilterForSearchlistState(e.target.value);
+    setFacilityFilterForSearchlistState({filterquery: e.target.value});
   }
   // --- End infobar state ---
 
@@ -204,17 +205,17 @@ function MapPageLayout({ locationData }) {
                       ></FilterableList>
                     </div>
                   </SearchQuery.Provider>
+                  <div className="inline-block h-full mx-4 w-0.5 self-stretch bg-neutral-100 opacity-100 divider"></div>
+                  <InfoBarContext.Provider value={infobarState}>
+                    <UpdateFacilityFilterForSearchlistContext.Provider
+                      value={updateFacilityFilterSearchbar}
+                    >
+                      <div id="infoCol" className="w-1/4 h-full">
+                        <InformationList></InformationList>
+                      </div>
+                    </UpdateFacilityFilterForSearchlistContext.Provider>
+                  </InfoBarContext.Provider>
                 </FacilityFilterForSearchlistContext.Provider>
-                <div className="inline-block h-full mx-4 w-0.5 self-stretch bg-neutral-100 opacity-100 divider"></div>
-                <InfoBarContext.Provider value={infobarState}>
-                  <UpdateFacilityFilterForSearchlistContext.Provider
-                    value={updateFacilityFilterSearchbar}
-                  >
-                    <div id="infoCol" className="w-1/4 h-full">
-                      <InformationList></InformationList>
-                    </div>
-                  </UpdateFacilityFilterForSearchlistContext.Provider>
-                </InfoBarContext.Provider>
               </UpdateMapMarkerContextFunction.Provider>
             </UpdateMapCenterContextFunction.Provider>
           </div>
@@ -294,10 +295,9 @@ function FilterableList({ items }) {
   
   // Filter by facility type
   const facilityFilterForSearchlistContext = useContext(FacilityFilterForSearchlistContext);
-  // const updatefacilityFilterForSearchlistContext = createContext(UpdatefacilityFilterForSearchlistContext);
 
-  const [query, setQuery] = useState("");
-  const [numListItems, setNumListItems] = useState(defaultNumLocations);
+  // const [query, setQuery] = useState("");
+  // const [numListItems, setNumListItems] = useState(defaultNumLocations);
   const [loadedAllListItems, setLoadedAllListItems] = useState(false);
 
   const searchQuery = useContext(SearchQuery);
@@ -309,32 +309,38 @@ function FilterableList({ items }) {
     // console.log(results.slice(0, 10));
     // console.log(items.data.slice(0, 10));
     results = filterFacilityType(
-      filterSearchTerm(items.data, query),
+      // filterSearchTerm(items.data, query),
+      filterSearchTerm(items.data, searchQuery.searchQuery),
       facilityFilterForSearchlistContext.filterquery
+    );
+    console.log(
+      "FilterableList [filterquery]: " +
+        facilityFilterForSearchlistContext.filterquery
     );
   } else {
     return <div className="loading-text">Loading...</div>;
   }
 
   function extendLocationlistResults() {
-    // updateSearchQuery({
-    //   searchQuery: searchQuery.searchQuery,
-    //   numListItems: numListItems + defaultNumLocationsIncrement,
-    //   increment: searchQuery.increment,
-    // });
-    setNumListItems(numListItems + defaultNumLocationsIncrement);
-    setLoadedAllListItems(numListItems >= results.length);
-    console.log("extendLocationlistResults: " + numListItems);
+    updateSearchQuery({
+      searchQuery: searchQuery.searchQuery,
+      numListItems: searchQuery.numListItems + searchQuery.increment,
+      increment: searchQuery.increment,
+    });
+    // setNumListItems(numListItems + defaultNumLocationsIncrement);
+    // setLoadedAllListItems(numListItems >= results.length);
+    setLoadedAllListItems(searchQuery.numListItems >= results.length);
+    console.log("extendLocationlistResults: " + searchQuery.numListItems);
   }
 
   function searchbarChange(e) {
-    // updateSearchQuery({
-    //   searchQuery: e.target.value,
-    //   numListItems: searchQuery.numListItems,
-    //   increment: searchQuery.increment,
-    // });
-    setQuery(e.target.value);
-    setNumListItems(defaultNumLocations);
+    updateSearchQuery({
+      searchQuery: e.target.value,
+      numListItems: defaultNumLocations,
+      increment: searchQuery.increment,
+    });
+    // setQuery(e.target.value);
+    // setNumListItems(defaultNumLocations);
     setLoadedAllListItems(false); // Workaround.
     // Current problem is that calling results.length gives the length of the
     // Previous query, rather than the current one. e.g.
@@ -367,7 +373,8 @@ function FilterableList({ items }) {
     <div className="flex flex-col h-full w-full">
       <LocationSearchBar
         className="w-full"
-        query={query}
+        // query={query}
+        query={searchQuery.searchQuery}
         onChange={searchbarChange}
       />
       {/* Horizontal Line */}
@@ -502,9 +509,11 @@ function InformationList( {} ) {
   const updateMapMarkerContextFunction = useContext(
     UpdateMapMarkerContextFunction
   );
-
-  const updatefacilityFilterForSearchlistFunction = useContext(
+  const updateFacilityFilterForSearchlistFunction = useContext(
     UpdateFacilityFilterForSearchlistContext
+  );
+  const facilityFilterForSearchlist = useContext(
+    FacilityFilterForSearchlistContext
   );
 
   return (
@@ -519,9 +528,12 @@ function InformationList( {} ) {
       ></GenericButton>
       <GenericButton
         customClass="mx-2 w-[calc(100%)] ml-0 mt-2"
-        text="Show All of Type:"
+        text="Show All of Type on Map:"
       ></GenericButton>
-      <FacilityFilterSearchBar></FacilityFilterSearchBar>
+      <FacilityFilterSearchBar
+        onChange={updateFacilityFilterForSearchlistFunction}
+        query={facilityFilterForSearchlist.filterquery}
+      ></FacilityFilterSearchBar>
       {/* <FilterBar></FilterBar> */}
       <hr className="my-4 border-t-0 bg-neutral-100 opacity-100 divider horizontal-divider" />
       <FacilityInfoBar></FacilityInfoBar>
