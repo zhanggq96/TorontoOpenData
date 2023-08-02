@@ -300,8 +300,8 @@ function FilterableList({ items }) {
   const [numListItems, setNumListItems] = useState(defaultNumLocations);
   const [loadedAllListItems, setLoadedAllListItems] = useState(false);
 
-  // const searchQuery = useContext(SearchQuery);
-  // const updateSearchQuery = useContext(UpdateSearchQuery);
+  const searchQuery = useContext(SearchQuery);
+  const updateSearchQuery = useContext(UpdateSearchQuery);
 
   var results = null;
   if (items) {
@@ -317,12 +317,22 @@ function FilterableList({ items }) {
   }
 
   function extendLocationlistResults() {
+    // updateSearchQuery({
+    //   searchQuery: searchQuery.searchQuery,
+    //   numListItems: numListItems + defaultNumLocationsIncrement,
+    //   increment: searchQuery.increment,
+    // });
     setNumListItems(numListItems + defaultNumLocationsIncrement);
     setLoadedAllListItems(numListItems >= results.length);
     console.log("extendLocationlistResults: " + numListItems);
   }
 
   function searchbarChange(e) {
+    // updateSearchQuery({
+    //   searchQuery: e.target.value,
+    //   numListItems: searchQuery.numListItems,
+    //   increment: searchQuery.increment,
+    // });
     setQuery(e.target.value);
     setNumListItems(defaultNumLocations);
     setLoadedAllListItems(false); // Workaround.
@@ -363,7 +373,7 @@ function FilterableList({ items }) {
       {/* Horizontal Line */}
       <hr className="my-4 border-t-0 bg-neutral-100 opacity-100 divider horizontal-divider" />
       <div className="mx-0 place-items-start overflow-y-auto">
-        <LocationList items={results} numItems={numListItems} />
+        <LocationList items={results} numItems={searchQuery.numListItems} />
         {results.length > 0 ? (
           <LoadAdditionalButton
             extendLocationlistResults={extendLocationlistResults}
