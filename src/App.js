@@ -406,7 +406,7 @@ function FilterableList({ items }) {
       />
       {/* Horizontal Line */}
       <hr className="my-4 border-t-0 bg-neutral-100 opacity-100 divider horizontal-divider" />
-      <div className="mx-0 place-items-start overflow-y-auto">
+      <div className="mx-0 place-items-start overflow-y-auto no-scrollbar">
         <LocationList items={results} numItems={searchQuery.numListItems} />
         {results.length > 0 ? (
           <LoadAdditionalButton
