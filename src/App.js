@@ -600,7 +600,7 @@ function FacilityInfoBar({ item }) {
   const display_item = infoBarContext.item;
 
   return (
-    <div className="mt-2 basicmap-font overflow-y-auto">
+    <div className="mt-2 basicmap-font overflow-y-auto break-all">
       <div className="w-full p-2 rounded-t-xl infobar-wrapper">
         <h1 className="infobar-header">Facility Information</h1>
       </div>
