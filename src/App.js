@@ -63,15 +63,18 @@ function App() {
   useEffect(() => {
     fetch(url)
       .then((response) => response.json())
-      .then((json) => setlocationData(json))
+      .then((json) => setlocationData(json.data))
       .catch((error) => {
         console.error(error);
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // --- End API state ---
-  // console.log(window.matchMedia("(prefers-color-scheme: light)").matches);
+  if (!locationData) {
+    return <div className="font-mono">Loading data...</div>
+  }
+    // --- End API state ---
+    // console.log(window.matchMedia("(prefers-color-scheme: light)").matches);
 
   return (
     <BrowserRouter basename={process.env.PUBLIC_URL}>
@@ -112,7 +115,7 @@ function MapPageLayout({ locationData }) {
     display_items: {},
   });
 
-  function addMarkerToMapFunction(item) {
+  function addMarkerToMap(item) {
     // Create a new object with the updated display_markers
     const updatedMapMarkerContextState = {
       display_items: {
@@ -124,6 +127,30 @@ function MapPageLayout({ locationData }) {
     // Update the state with the new object
     setmapMarkerContextState(updatedMapMarkerContextState);
   }
+
+  function setMarkersTo(items, filterquery, reset) {
+    // const updatedMapMarkerContextState = {
+    //   display_items: filterquery === "" ? locationData : filterFacilityType(locationData, filterquery),
+    // };
+    let updatedMapMarkerContextState = null;
+    switch(reset) {
+      case "showall":
+        updatedMapMarkerContextState = { display_items: locationData };
+        break;
+      case "hideall":
+        updatedMapMarkerContextState = { display_items: {} };
+        break;
+      default: updatedMapMarkerContextState = {
+        // If press "show all of type" with empty query, display everything.
+        display_items: filterquery === "" ? locationData : filterFacilityType(locationData, filterquery)}
+    }
+    setmapMarkerContextState(updatedMapMarkerContextState);
+  }
+
+  const mapMarkerFunctions = {
+    addMarkerToMapFunction: addMarkerToMap,
+    setMarkersToFunction: setMarkersTo,
+  };
 
   const [mapCenterContextState, setMapCenterContextState] = useState({
     center: mapInitCenter,
@@ -192,7 +219,7 @@ function MapPageLayout({ locationData }) {
               value={centerToMarkerLocation}
             >
               <UpdateMapMarkerContextFunction.Provider
-                value={addMarkerToMapFunction}
+                value={mapMarkerFunctions}
               >
                 <FacilityFilterForSearchlistContext.Provider
                   value={facilityFilterForSearchlistState}
@@ -309,8 +336,8 @@ function FilterableList({ items }) {
     // console.log(results.slice(0, 10));
     // console.log(items.data.slice(0, 10));
     results = filterFacilityType(
-      // filterSearchTerm(items.data, query),
-      filterSearchTerm(items.data, searchQuery.searchQuery),
+      // filterSearchTerm(items, query),
+      filterSearchTerm(items, searchQuery.searchQuery),
       facilityFilterForSearchlistContext.filterquery
     );
     console.log(
@@ -398,9 +425,11 @@ function FilterableList({ items }) {
 function LocationList({ items, numItems }) {
   const spliced_items = items.slice(0, numItems);
 
-  const updateMapMarkerContextFunction = useContext(
+  const updateMapMarkerContext = useContext(
     UpdateMapMarkerContextFunction
   );
+  const updateMapMarkerContextFunction = updateMapMarkerContext.addMarkerToMapFunction;
+
   const updateMapCenterContextFunction = useContext(
     UpdateMapCenterContextFunction
   );
@@ -493,11 +522,18 @@ function LoadAdditionalButton({ extendLocationlistResults, loadedAll }) {
   );
 }
 
-function GenericButton({ text, onClick, customClass }) {
+function GenericButton({ text, onclick, customClass }) {
   return (
     <button
       type="submit"
       className={`p-0 basicmap-font text-sm font-medium text-white bg-pink-500 rounded-lg border border-pink-700 hover:bg-pink-800 focus:ring-4 focus:outline-none focus:ring-pink-300 dark:bg-pink-600 dark:hover:bg-pink-700 dark:focus:ring-pink-800 h-10 mb-2 button ${customClass}`}
+      onClick={
+        onclick instanceof Function
+          ? function () {
+              onclick();
+            }
+          : function () {}
+      }
     >
       {text}
     </button>
@@ -506,9 +542,7 @@ function GenericButton({ text, onClick, customClass }) {
 
 function InformationList( {} ) {
   // const facilityInfoBarItem = useContext(FacilityInfoBarItemContext);
-  const updateMapMarkerContextFunction = useContext(
-    UpdateMapMarkerContextFunction
-  );
+  const mapMarkerFunctions = useContext(UpdateMapMarkerContextFunction);
   const updateFacilityFilterForSearchlistFunction = useContext(
     UpdateFacilityFilterForSearchlistContext
   );
@@ -516,19 +550,36 @@ function InformationList( {} ) {
     FacilityFilterForSearchlistContext
   );
 
+  const showAllMapMarkers = function() {
+    mapMarkerFunctions.setMarkersToFunction(null, "", "showall");
+  }
+  const hideAllMapMarkers = function() {
+    mapMarkerFunctions.setMarkersToFunction(null, "", "hideall");
+  }
+  const showFilteredMapMarkers = function() {
+    mapMarkerFunctions.setMarkersToFunction(
+      null,
+      facilityFilterForSearchlist.filterquery,
+      ""
+    );
+  }
+
   return (
     <div className="flex-wrap w-full">
       <GenericButton
         customClass="mx-2 w-[calc(50%-8px)] ml-0"
         text="Show All"
+        onclick={showAllMapMarkers}
       ></GenericButton>
       <GenericButton
         customClass="mx-2 w-[calc(50%-8px)] mr-0"
         text="Hide All"
+        onclick={hideAllMapMarkers}
       ></GenericButton>
       <GenericButton
         customClass="mx-2 w-[calc(100%)] ml-0 mt-2"
         text="Show All of Type on Map:"
+        onclick={showFilteredMapMarkers}
       ></GenericButton>
       <FacilityFilterSearchBar
         onChange={updateFacilityFilterForSearchlistFunction}
