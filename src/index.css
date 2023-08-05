@@ -37,6 +37,8 @@ code {
 .canvas {
   width: 1600px;
   height: 800px;
+  min-width: 1600px;
+  min-height: 800px;
   background-color: rgb(3 7 18/var(--tw-bg-opacity));
 }
 
