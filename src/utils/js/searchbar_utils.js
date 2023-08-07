@@ -5,7 +5,10 @@ export function filterSearchTerm(items, query) {
   const queryWords = query.toLowerCase().split(" ");
 
   return items.filter((item) =>
-    everyStartFound(item.attributes.geojson.location, queryWords)
+    everyStartFound(
+      item.attributes.geojson.location.concat(" ", item.attributes.geojson.address),
+      queryWords
+    )
   );
 }
 

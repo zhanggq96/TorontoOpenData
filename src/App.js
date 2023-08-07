@@ -201,7 +201,7 @@ function MapPageLayout({ locationData }) {
 
   return (
     // MapCenterContext
-    <div className="bg-gray-950 flex justify-center items-center min-h-screen p-10">
+    <div className="bg-gray-950 flex justify-center items-center min-h-screen p-25">
       <UpdateInfoBarContext.Provider value={setInfobarTo}>
         <UpdateSearchQuery.Provider value={setSearchQueryState}>
           <div className="canvas flex">
